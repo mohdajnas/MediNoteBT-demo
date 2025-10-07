@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approve Discharge Summary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: black;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .patient-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-editor {
+            margin-bottom: 30px;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #000000;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.2);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        .btn-approve {
+            background: black;
+            color: white;
+        }
+        
+        .btn-approve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(144, 144, 144, 0.4);
+        }
+        
+        .btn-revise {
+            background: black;
+            color: white;
+        }
+        
+        .btn-revise:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(144, 144, 144, 0.4);
+        }
+        
+        .revision-notes {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .revision-notes textarea {
+            min-height: 100px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .success-message, .error-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success-message {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        
+        .error-message {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Discharge Summary Approval</h1>
+            <p>Patient ID: {{ summary_data.patient_id }}</p>
+        </div>
+        
+        <div class="content">
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorMessage" class="error-message"></div>
+            
+            <div class="patient-info">
+                <h3>Patient Information</h3>
+                <p><strong>Patient ID:</strong> {{ summary_data.patient_id }}</p>
+                <p><strong>Generated:</strong> {{ summary_data.created_at }}</p>
+            </div>
+            
+            <div class="summary-editor">
+                <h3>Discharge Summary</h3>
+                <textarea id="summaryText" placeholder="Review and edit the discharge summary...">{{ summary_data.summary }}</textarea>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-approve" onclick="approveSummary()">
+                    ✓ Approve Summary
+                </button>
+            </div>
+            
+            <div id="revisionNotes" class="revision-notes">
+                <h4>Revision Notes</h4>
+                <textarea id="revisionText" placeholder="Please provide specific notes about what needs to be revised..."></textarea>
+                <br><br>
+                <button class="btn btn-revise" onclick="sendForRevision()">
+                    Send Revision Request
+                </button>
+            </div>
+            
+            <div id="loading" class="loading">
+                <p>Processing your request...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = '{{ token }}';
+        
+        function showMessage(type, message) {
+            const successDiv = document.getElementById('successMessage');
+            const errorDiv = document.getElementById('errorMessage');
+            
+            if (type === 'success') {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+            } else {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+            }
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+                
+        async function approveSummary() {
+            const modifiedSummary = document.getElementById('summaryText').value;
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/approve-summary', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        action: 'approve',
+                        modified_summary: modifiedSummary
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.modified_by_doctor) {
+                        showMessage('success', 'Summary approved with your edits! The updated version has been sent back to the medical team.');
+                    } else {
+                        showMessage('success', 'Summary approved successfully! The patient record has been updated.');
+                    }
+                    
+                    // Hide the approve button and textarea after approval
+                    document.querySelector('.action-buttons').style.display = 'none';
+                    document.getElementById('summaryText').style.display = 'none';
+                    
+                    // Show the final approved summary as read-only
+                    const summaryEditor = document.querySelector('.summary-editor');
+                    summaryEditor.innerHTML = `
+                        <h3>Approved Summary</h3>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 2px solid #28a745; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${modifiedSummary}</div>
+                    `;
+                } else {
+                    showMessage('error', result.message);
+                }
+            } catch (error) {
+                showMessage('error', 'Error approving summary. Please try again.');
+            }
+            
+            showLoading(false);
+        }
+        
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Matthew Meyer
+- Age: 66
+- Gender: Female
+- Patient ID: P9760
+
+**Diagnosis**:
+- Primary Diagnosis: Asthma
+- Secondary Diagnosis: Peripheral Neuropathy
+- Secondary Diagnosis: Peripheral Neuropathy
+
+**Procedure**: MRI Scan
+
+**Hospital Course**:
+Admission Date: 12/10/2024
+Course in Hospital: 66-year-old Female patient admitted with Asthma. Underwent MRI Scan.
+
+**Discharge Plan**:
+- Medications: Losartan 50mg daily, Warfarin 5mg daily, Metformin 500mg daily
+- Follow-up Instructions: Respiratory follow-up
+- Rehabilitation Plan: Cardiac rehab
+- Other Instructions: Quit smoking

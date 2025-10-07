@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Charles Stokes
+- Age: 54
+- Gender: Male
+- Patient ID: P7285
+
+**Diagnosis**:
+- Primary Diagnosis: Type 2 Diabetes Mellitus
+- Secondary Diagnosis: Obesity
+- Secondary Diagnosis: Chronic Back Pain
+
+**Procedure**: CABG
+
+**Hospital Course**:
+Admission Date: 25/08/2025
+Course in Hospital: 54-year-old Male patient admitted with Type 2 Diabetes Mellitus. Underwent CABG.
+
+**Discharge Plan**:
+- Medications: Omeprazole 20mg daily, Prednisolone 10mg daily, Levothyroxine 100mcg daily
+- Follow-up Instructions: Review thyroid profile
+- Rehabilitation Plan: Physiotherapy
+- Other Instructions: Quit smoking and drinking alcohol

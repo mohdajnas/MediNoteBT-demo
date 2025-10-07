@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Travis Jackson
+- Age: 47
+- Gender: Female
+- Patient ID: P3693
+
+**Diagnosis**:
+- Primary Diagnosis: Chronic Kidney Disease
+- Secondary Diagnosis: Chronic Back Pain
+- Secondary Diagnosis: Vitamin D Deficiency
+
+**Procedure**: Knee Replacement
+
+**Hospital Course**:
+Admission Date: 09/07/2025
+Course in Hospital: 47-year-old Female patient admitted with Chronic Kidney Disease. Underwent Knee Replacement. OK BYE. BA BAAI
+
+**Discharge Plan**:
+- Medications: Aspirin 75mg daily, Omeprazole 20mg daily, Prednisolone 10mg daily
+- Follow-up Instructions: Orthopedic review
+- Rehabilitation Plan: None
+- Other Instructions: None

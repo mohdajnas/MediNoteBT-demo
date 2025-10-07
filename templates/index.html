@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discharge Summary Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: black;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .patient-data-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: black;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: black;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn {
+            background: black;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: black;
+        }
+
+        .btn-success {
+            background: black;
+        }
+
+        .btn-warning {
+            background: black;
+        }
+
+        .patient-info {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .patient-field {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .patient-field:last-child {
+            border-bottom: none;
+        }
+
+        .field-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .field-value {
+            color: #6c757d;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        .summary-section {
+            grid-column: 1 / -1;
+            margin-top: 1rem;
+        }
+
+        .summary-display {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 1.5rem;
+            min-height: 300px;
+            display: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: black;
+            background-size: 200% 100%;
+            animation: gradient 3s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .summary-content {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+
+        .edit-mode {
+            display: none;
+        }
+
+        .edit-textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .edit-textarea:focus {
+            outline: none;
+            border-color: black;
+
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid black;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 1px solid #c3e6cb;
+            display: none;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-right: 0;
+            }
+        }
+
+        .medical-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            opacity: 0.8;
+        }
+
+        .approval-status {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #doctorSelect {
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        #doctorSelect:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .doctor-dropdown {
+            min-width: 220px;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #2c3e50;
+            background: white;
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='20' width='20' viewBox='0 0 24 24'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .doctor-dropdown:focus {
+            outline: none;
+            border-color: black;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Modal popup styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .popup-message {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* .popup-success {
+            border-left: 5px solid #28a745;
+        }
+
+        .popup-error {
+            border-left: 5px solid #dc3545;
+        } */
+
+        .popup-message h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.3rem;
+        }
+
+        .popup-success h3 {
+            color: #28a745;
+        }
+
+        .popup-error h3 {
+            color: #dc3545;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+   
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MedNoteBT</h1>
+            <p>Professional Medical Documentation System By BOEHMTECH LLP</p>
+
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title">
+
+                    Patient Lookup
+                </h2>
+                
+                <div class="input-group">
+                    <label for="patientId">Patient ID</label>
+                    <input type="text" id="patientId" placeholder="Enter Patient ID (e.g., N4894)">
+                </div>
+                
+                <button class="btn" onclick="fetchPatientData()" id="fetchBtn">
+                    Fetch Patient Data
+                </button>
+
+                <div class="error" id="errorMessage"></div>
+                <div class="success" id="successMessage"></div>
+                <div class="approval-status" id="approvalStatus" style="display: none;">
+                    <!-- Status messages will appear here -->
+                </div>
+            </div>
+
+            <div class="patient-data-section">
+                <h2 class="section-title">
+
+                    Patient Information
+                </h2>
+                
+                <div class="patient-info" id="patientInfo">
+                    <!-- Patient data will be populated here -->
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-success" onclick="generateSummary()" id="generateBtn" style="display: none;">
+                        Generate Summary
+                    </button>
+                </div>
+            </div>
+
+            <div class="summary-section">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Generating discharge summary...</p>
+                </div>
+
+                <div class="summary-display" id="summaryDisplay">
+                    <h2 class="section-title">
+                        <svg class="medical-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10,9 9,9 8,9"/>
+                        </svg>
+                        Discharge Summary
+                    </h2>
+                    
+                    <div class="summary-content" id="summaryContent"></div>
+                    
+                    <div class="edit-mode" id="editMode">
+                        <textarea class="edit-textarea" id="editTextarea"></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-warning" onclick="toggleEdit()" id="editBtn">
+                            Edit Summary
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadPDF()">
+                            Download PDF
+                        </button>
+                        <button class="btn btn-secondary" onclick="saveSummary()">
+                            Save to File
+                        </button>
+                        <!-- Replace the existing doctor approval button with this dropdown version -->
+                        <div id="doctorApprovalSection" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <select id="doctorSelect" class="doctor-dropdown">
+                                <option value="">Select Doctor...</option>
+                            </select>
+                            <button onclick="sendForApprovalWithDropdown()" class="btn" style="background: black;">
+                                Send for Approval
+                            </button>
+                        </div>
+
+
+                        <button class="btn btn-success" onclick="saveEdit()" id="saveBtn" style="display: none;">
+                            Save Changes
+                        </button>
+                        <button class="btn btn-secondary" onclick="cancelEdit()" id="cancelBtn" style="display: none;">
+                            Cancel
+                        </button>
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        let doctorsList = [];
+        let approvalStatusInterval = null;
+        let currentPatientData = null;
+        let currentSummary = '';
+        let isEditMode = false;
+        let currentPatientId = null;
+
+        // API base URL - adjust if running on different port
+        const API_BASE = window.location.origin;
+
+        function showError(message) {
+            showPopup(message, 'error');
+        }
+
+        function showSuccess(message) {
+            showPopup(message, 'success');
+        }
+                
+        function showPopup(message, type) {
+            // Remove existing popup if any
+            const existingPopup = document.getElementById('popup-overlay');
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+
+            // Create popup overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'popup-overlay';
+            overlay.className = 'popup-overlay';
+            overlay.style.display = 'flex';
+
+            // Create popup content
+            const popup = document.createElement('div');
+            popup.className = `popup-message popup-${type}`;
+
+            const icon = type === 'success' ? '' : '❌';
+            const title = type === 'success' ? 'Success' : 'Error';
+
+            popup.innerHTML = `
+                <h3>${icon} ${title}</h3>
+                <p>${message}</p>
+            `;
+
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
+
+            // Auto close after 3 seconds with fade out
+            setTimeout(() => { // Start closing process after 3 seconds
+                overlay.style.animation = 'fadeOut 0.5s ease-in-out'; // Apply animation
+                // Use an event listener to remove the element right after the animation ends
+                overlay.addEventListener('animationend', () => {
+                    overlay.remove();
+                }, { once: true }); // { once: true } automatically removes the listener
+            }, 1000); // 3-second delay before starting to fade out
+        }
+
+        function closePopup() {
+            const popup = document.getElementById('popup-overlay');
+            if (popup) {
+                popup.style.animation = 'fadeOut 0.3s ease-in-out';
+                setTimeout(() => {
+                    popup.remove();
+                }, 300);
+            }
+        }
+
+        function setLoading(isLoading, buttonId = null) {
+            if (buttonId) {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    button.disabled = isLoading;
+                    if (isLoading) {
+                        button.textContent = 'Loading...';
+                    } else {
+                        // Reset button text based on button ID
+                        if (buttonId === 'fetchBtn') button.textContent = 'Fetch Patient Data';
+                        if (buttonId === 'generateBtn') button.textContent = 'Generate Summary';
+                    }
+                }
+            }
+        }
+        async function loadDoctors() {
+            try {
+                const response = await fetch(`${API_BASE}/api/doctors`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    doctorsList = result.doctors;
+                    populateDoctorDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+            }
+        }
+
+        function populateDoctorDropdown() {
+            const select = document.getElementById('doctorSelect');
+            select.innerHTML = '<option value="">Select Doctor...</option>';
+            
+            doctorsList.forEach(doctor => {
+                const option = document.createElement('option');
+                option.value = doctor.email;
+                option.textContent = `${doctor.name} (${doctor.specialty})`;
+                select.appendChild(option);
+            });
+        }
+
+        async function fetchPatientData() {
+            const patientId = document.getElementById('patientId').value.trim();
+            
+            if (!patientId) {
+                showError('Please enter a Patient ID');
+                return;
+            }
+
+            console.log('Fetching data for patient:', patientId);
+            setLoading(true, 'fetchBtn');
+
+            try {
+                const url = `${API_BASE}/api/patient/${patientId}`;
+                console.log('Requesting URL:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Response data:', result);
+
+                if (!result.success) {
+                    showError(result.message);
+                    document.getElementById('patientInfo').style.display = 'none';
+                    document.getElementById('generateBtn').style.display = 'none';
+                    return;
+                }
+
+                currentPatientData = result.data;
+                currentPatientId = result.data['Patient ID'];
+                displayPatientData(result.data);
+                showSuccess('Patient data loaded successfully');
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showError('Error fetching patient data: ' + error.message);
+            } finally {
+                setLoading(false, 'fetchBtn');
+            }
+        }
+
+        function displayPatientData(patient) {
+            const patientInfoDiv = document.getElementById('patientInfo');
+            const fields = [
+                { label: 'Name', key: 'Name' },
+                { label: 'Age', key: 'Age' },
+                { label: 'Gender', key: 'Gender' },
+                { label: 'Patient ID', key: 'Patient ID' },
+                { label: 'Primary Diagnosis', key: 'Primary Diagnosis' },
+                { label: 'Secondary Diagnosis 1', key: 'Secondary Diagnosis 1' },
+                { label: 'Secondary Diagnosis 2', key: 'Secondary Diagnosis 2' },
+                { label: 'Procedure', key: 'Procedure' },
+                { label: 'Admission Date', key: 'Admission Date' },
+                { label: 'Course in Hospital', key: 'Course in Hospital' },
+                { label: 'Medications', key: 'Medications' },
+                { label: 'Follow-up Instructions', key: 'Follow-up Instructions' },
+                { label: 'Rehabilitation Plan', key: 'Rehabilitation Plan' },
+                { label: 'Other Instructions', key: 'Other Instructions' }
+            ];
+
+            let html = '';
+            fields.forEach(field => {
+                const value = patient[field.key];
+                if (value && value !== 'N/A' && value !== 'None' && value !== null) {
+                    html += `
+                        <div class="patient-field">
+                            <span class="field-label">${field.label}:</span>
+                            <span class="field-value">${value}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            patientInfoDiv.innerHTML = html;
+            patientInfoDiv.style.display = 'block';
+            document.getElementById('generateBtn').style.display = 'block';
+        }
+
+        async function generateSummary() {
+            if (!currentPatientData) {
+                showError('Please fetch patient data first');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('summaryDisplay').style.display = 'none';
+            setLoading(true, 'generateBtn');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/generate-summary`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        patient_id: currentPatientData['Patient ID']
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    showError(result.message);
+                    return;
+                }
+
+                currentSummary = result.summary;
+                
+                document.getElementById('summaryContent').textContent = currentSummary;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('summaryDisplay').style.display = 'block';
+                
+                showSuccess('Discharge summary generated successfully');
+
+                document.getElementById('approvalStatus').style.display = 'none';
+                    if (approvalStatusInterval) {
+                        clearInterval(approvalStatusInterval);
+                        approvalStatusInterval = null;
+                    }
+
+            } catch (error) {
+                showError('Error generating summary: ' + error.message);
+                console.error('Error:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                setLoading(false, 'generateBtn');
+            }
+        }
+
+        function toggleEdit() {
+            const summaryContent = document.getElementById('summaryContent');
+            const editMode = document.getElementById('editMode');
+            const editBtn = document.getElementById('editBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const editTextarea = document.getElementById('editTextarea');
+
+            if (!isEditMode) {
+                // Enter edit mode
+                editTextarea.value = currentSummary;
+                summaryContent.style.display = 'none';
+                editMode.style.display = 'block';
+                editBtn.style.display = 'none';
+                saveBtn.style.display = 'inline-block';
+                cancelBtn.style.display = 'inline-block';
+                isEditMode = true;
+                editTextarea.focus();
+            }
+        }
+
+        function saveEdit() {
+            const editTextarea = document.getElementById('editTextarea');
+            const summaryContent = document.getElementById('summaryContent');
+            const editMode = document.getElementById('editMode');
+            const editBtn = document.getElementById('editBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+
+            currentSummary = editTextarea.value;
+            summaryContent.textContent = currentSummary;
+
+            // Exit edit mode
+            summaryContent.style.display = 'block';
+            editMode.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            isEditMode = false;
+
+            showSuccess('Summary updated successfully');
+        }
+
+        function cancelEdit() {
+            const summaryContent = document.getElementById('summaryContent');
+            const editMode = document.getElementById('editMode');
+            const editBtn = document.getElementById('editBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+
+            // Exit edit mode without saving
+            summaryContent.style.display = 'block';
+            editMode.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            isEditMode = false;
+        }
+
+        async function saveSummary() {
+            if (!currentSummary || !currentPatientData) {
+                showError('Please generate a summary first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/save-summary`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        patient_id: currentPatientData['Patient ID'],
+                        summary: currentSummary
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('Summary saved to file successfully');
+                } else {
+                    showError(result.message);
+                }
+
+            } catch (error) {
+                showError('Error saving summary: ' + error.message);
+                console.error('Error:', error);
+            }
+        }
+        // Add this function to your existing JavaScript
+        // Replace the existing sendForApproval function with this corrected version
+        async function sendForApprovalWithDropdown() {
+            if (!currentSummary || !currentPatientData) {
+                showError('Please generate a summary first');
+                return;
+            }
+            
+            const doctorSelect = document.getElementById('doctorSelect');
+            const doctorEmail = doctorSelect.value;
+            
+            if (!doctorEmail) {
+                showError('Please select a doctor from the dropdown');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/send-for-approval`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patient_id: currentPatientData['Patient ID'],
+                        summary: currentSummary,
+                        doctor_email: doctorEmail
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const doctorName = doctorSelect.options[doctorSelect.selectedIndex].text.split(' (')[0];
+                    showSuccess(`Approval email sent successfully to ${doctorName}`);
+                    
+                    // Start checking for approval status
+                    startApprovalStatusCheck();
+                } else {
+                    showError('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Send approval error:', error);
+                showError('Error sending approval email');
+            }
+        }
+
+        function startApprovalStatusCheck() {
+            if (approvalStatusInterval) {
+                clearInterval(approvalStatusInterval);
+            }
+            
+            approvalStatusInterval = setInterval(checkApprovalStatus, 5000); // Check every 5 seconds
+        }
+
+        async function checkApprovalStatus() {
+            if (!currentPatientId) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/check-approval-status/${currentPatientId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const statusDiv = document.getElementById('approvalStatus');
+                    
+                    if (result.status === 'approved') {
+                        // Clear the interval
+                        clearInterval(approvalStatusInterval);
+                        approvalStatusInterval = null;
+                        
+                        // Update the summary if doctor modified it
+                        if (result.modified_by_doctor && result.final_summary) {
+                            currentSummary = result.final_summary;
+                            document.getElementById('summaryContent').textContent = currentSummary;
+                            
+                            statusDiv.innerHTML = `
+                                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin: 10px 0; border: 1px solid #c3e6cb;">
+                                    <strong>Summary Approved!</strong><br>
+                                    The doctor has approved and modified the summary. The updated version is now displayed.
+                                    <br><small>Approved at: ${new Date(result.approved_at).toLocaleString()}</small>
+                                </div>
+                            `;
+                        } else {
+                            statusDiv.innerHTML = `
+                                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin: 10px 0; border: 1px solid #c3e6cb;">
+                                    <strong>Summary Approved!</strong><br>
+                                    The doctor has approved the summary without changes.
+                                    <br><small>Approved at: ${new Date(result.approved_at).toLocaleString()}</small>
+                                </div>
+                            `;
+                        }
+                        statusDiv.style.display = 'block';
+                        
+                        // Show success message
+                        showSuccess('Doctor has approved the summary!');
+                        
+                    } else if (result.status === 'revision_requested') {
+                        // Clear the interval
+                        clearInterval(approvalStatusInterval);
+                        approvalStatusInterval = null;
+                        
+                        // Update summary with doctor's revision
+                        if (result.revised_summary) {
+                            currentSummary = result.revised_summary;
+                            document.getElementById('summaryContent').textContent = currentSummary;
+                        }
+                        
+                        statusDiv.innerHTML = `
+                            <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; margin: 10px 0; border: 1px solid #ffeaa7;">
+                                <strong>📝 Doctor has sent back revised summary!</strong><br>
+                                The doctor has made revisions to the summary. The updated version is now displayed.
+                                ${result.revision_notes ? `<br><br><strong>Notes:</strong> ${result.revision_notes}` : ''}
+                                <br><small>Revised at: ${new Date(result.requested_at).toLocaleString()}</small>
+                            </div>
+                        `;
+                        statusDiv.style.display = 'block';
+                        
+                        // Show success message
+                        showSuccess('Doctor has sent back the revised summary!');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking approval status:', error);
+            }
+        }
+
+
+        function downloadPDF() {
+            if (!currentSummary || !currentPatientData) {
+                showError('Please generate a summary first'); 
+                return;
+            }
+
+            const { jsPDF } = window.jspdf; // Fixed: lowercase 'jspdf'
+            const doc = new jsPDF();
+            
+            // Get the current displayed summary (edited or original)
+            const summaryText = isEditMode ? 
+                document.getElementById('editTextarea').value : 
+                currentSummary;
+            
+            let yPos = 25;
+            const margin = 20;
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const contentWidth = pageWidth - 2 * margin;
+            
+            // Title
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DISCHARGE SUMMARY', pageWidth/2, yPos, {align: 'center'});
+            yPos += 20;
+            
+            // Process the summary text line by line
+            const lines = summaryText.split('\n');
+            
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                
+                // Skip empty lines but add spacing
+                if (!line) {
+                    yPos += 4;
+                    continue;
+                }
+                
+                // Check if we need a new page
+                if (yPos > pageHeight - 40) {
+                    doc.addPage();
+                    yPos = 25;
+                }
+                
+                // Handle main headers (lines with **)
+                if (line.startsWith('**') && line.endsWith('**')) {
+                    const headerText = line.replace(/\*\*/g, '');
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(headerText, margin, yPos);
+                    yPos += 10;
+                    
+                    // Add underline for headers
+                    doc.setLineWidth(0.5);
+                    doc.line(margin, yPos, margin + doc.getTextWidth(headerText), yPos);
+                    yPos += 8;
+                }
+                // Handle bullet points
+                else if (line.startsWith('• ') || line.startsWith('- ')) {
+                    const bulletText = line.replace(/^[•-]\s*/, '');
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'normal');
+                    
+                    // Handle bold text within bullet points
+                    if (bulletText.includes('**')) {
+                        let processedText = bulletText;
+                        let currentX = margin + 10;
+                        
+                        // Add bullet point
+                        doc.text('•', margin + 5, yPos);
+                        
+                        // Process bold and normal text
+                        const parts = processedText.split(/(\*\*[^*]+\*\*)/);
+                        
+                        for (let part of parts) {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                                // Bold text
+                                const boldText = part.replace(/\*\*/g, '');
+                                doc.setFont('helvetica', 'bold');
+                                doc.text(boldText, currentX, yPos);
+                                currentX += doc.getTextWidth(boldText);
+                            } else if (part.trim()) {
+                                // Normal text
+                                doc.setFont('helvetica', 'normal');
+                                doc.text(part, currentX, yPos);
+                                currentX += doc.getTextWidth(part);
+                            }
+                        }
+                        yPos += 8;
+                    } else {
+                        // Simple bullet point
+                        const wrappedLines = doc.splitTextToSize(`• ${bulletText}`, contentWidth - 10);
+                        doc.text(wrappedLines, margin + 5, yPos);
+                        yPos += wrappedLines.length * 6 + 2;
+                    }
+                }
+                // Handle regular text with potential bold formatting
+                else {
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'normal');
+                    
+                    if (line.includes('**')) {
+                        // Handle mixed bold and normal text
+                        const parts = line.split(/(\*\*[^*]+\*\*)/);
+                        let currentX = margin;
+                        
+                        for (let part of parts) {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                                // Bold text
+                                const boldText = part.replace(/\*\*/g, '');
+                                doc.setFont('helvetica', 'bold');
+                                
+                                // Check for line wrap
+                                if (currentX + doc.getTextWidth(boldText) > pageWidth - margin) {
+                                    yPos += 6;
+                                    currentX = margin;
+                                }
+                                
+                                doc.text(boldText, currentX, yPos);
+                                currentX += doc.getTextWidth(boldText);
+                            } else if (part.trim()) {
+                                // Normal text
+                                doc.setFont('helvetica', 'normal');
+                                
+                                // Check for line wrap
+                                if (currentX + doc.getTextWidth(part) > pageWidth - margin) {
+                                    yPos += 6;
+                                    currentX = margin;
+                                }
+                                
+                                doc.text(part, currentX, yPos);
+                                currentX += doc.getTextWidth(part);
+                            }
+                        }
+                        yPos += 8;
+                    } else {
+                        // Simple text without formatting
+                        const wrappedLines = doc.splitTextToSize(line, contentWidth);
+                        doc.text(wrappedLines, margin, yPos);
+                        yPos += wrappedLines.length * 6 + 4;
+                    }
+                }
+            }
+            
+            // Footer
+            yPos = Math.max(yPos + 10, pageHeight - 20);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`Generated: ${new Date().toLocaleString()}`, margin, yPos);
+            
+            // Download with timestamp
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            doc.save(`${currentPatientData['Patient ID']}_discharge_summary_${timestamp}.pdf`);
+            showSuccess('PDF downloaded successfully with proper formatting');
+        }
+
+
+
+
+        
+
+        // Allow Enter key to fetch patient data
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('patientId').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    fetchPatientData();
+                }
+            });
+            loadDoctors();
+        });
+    </script>

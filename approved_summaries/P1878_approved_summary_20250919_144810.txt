@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Ricardo Williams
+- Age: 45
+- Gender: Female
+- Patient ID: P1878
+
+**Diagnosis**:
+- Primary Diagnosis: Hypertension
+- Secondary Diagnosis: Anemia
+- Secondary Diagnosis: Sleep Apnea
+
+**Procedure**: Knee Replacement
+
+**Hospital Course**:
+Admission Date: 22/04/2025
+Course in Hospital: 45-year-old Female patient admitted with Hypertension. Underwent Knee Replacement OK BIE.
+
+**Discharge Plan**:
+- Medications: Atorvastatin 20mg daily, Losartan 50mg daily, Omeprazole 20mg daily
+- Follow-up Instructions: Check renal function
+- Rehabilitation Plan: None
+- Other Instructions: Quit smoking

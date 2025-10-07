@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Christopher Hughes
+- Age: 79
+- Gender: Male
+- Patient ID: P8028
+
+**Diagnosis**:
+- Primary Diagnosis: Liver Cirrhosis
+- Secondary Diagnosis: Hyponatremia
+- Secondary Diagnosis: Peripheral Neuropathy
+
+**Procedure**: Hip Replacement
+
+**Hospital Course**:
+Admission Date: 16/08/2025
+Course in Hospital: 79-year-old Male patient admitted with Liver Cirrhosis. Underwent Hip Replacement.
+
+**Discharge Plan**:
+- Medications: Salbutamol Inhaler, Levothyroxine 100mcg daily, Warfarin 5mg daily
+- Follow-up Instructions: Neurology follow-up
+- Rehabilitation Plan: Cardiac rehab
+- Other Instructions: Regular exercise

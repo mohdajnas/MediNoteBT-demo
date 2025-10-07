@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Darren Hawkins
+- Age: 60
+- Gender: Female
+- Patient ID: P6951
+
+**Diagnosis**:
+- Primary Diagnosis: Type 2 Diabetes Mellitus
+- Secondary Diagnosis: Peripheral Neuropathy
+- Secondary Diagnosis: Obesity
+
+**Procedure**: Endoscopy
+
+**Hospital Course**:
+Admission Date: 25/11/2024
+Course in Hospital: 60-year-old Female patient admitted with Type 2 Diabetes Mellitus. Underwent Endoscopy.
+
+**Discharge Plan**:
+- Medications: Levothyroxine 100mcg daily, Aspirin 75mg daily, Insulin injection
+- Follow-up Instructions: Respiratory follow-up
+- Rehabilitation Plan: Pulmonary rehab
+- Other Instructions: Avoid strenuous activity

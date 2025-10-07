@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Craig Le
+- Age: 60
+- Gender: Female
+- Patient ID: P8656
+
+**Diagnosis**:
+- Primary Diagnosis: Type 2 Diabetes Mellitus
+- Secondary Diagnosis: GERD
+- Secondary Diagnosis: Sleep Apnea
+
+**Procedure**: MRI Scan
+
+**Hospital Course**:
+Admission Date: 29/11/2024
+Course in Hospital: 60-year-old Female patient admitted with Type 2 Diabetes Mellitus. Underwent MRI Scan.
+
+**Discharge Plan**:
+- Medications: Aspirin 75mg daily, Losartan 50mg daily, Omeprazole 20mg daily
+- Follow-up Instructions: Physiotherapy sessions
+- Rehabilitation Plan: Pulmonary rehab
+- Other Instructions: Avoid strenuous activities.

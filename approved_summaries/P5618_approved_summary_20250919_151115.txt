@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Kayla Mcguire
+- Age: 38
+- Gender: Male
+- Patient ID: P5618
+
+**Diagnosis**:
+- Primary Diagnosis: Stroke
+- Secondary Diagnosis: Sleep Apnea
+- Secondary Diagnosis: Anemia
+
+**Procedure**: Hip Replacement
+
+**Hospital Course**:
+Admission Date: 02/03/2024
+Course in Hospital: 38-year-old Male patient admitted with Stroke. Underwent Hip Replacement.
+
+**Discharge Plan**:
+- Medications: Warfarin 5mg daily, Insulin injection, Metformin 500mg daily
+- Follow-up Instructions: Check renal function
+- Rehabilitation Plan: Cardiac rehabilitation 
+- Other Instructions: None

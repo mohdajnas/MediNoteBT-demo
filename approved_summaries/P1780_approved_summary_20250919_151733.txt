@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Angela Hernandez
+- Age: 74
+- Gender: Male
+- Patient ID: P1780
+
+**Diagnosis**:
+- Primary Diagnosis: Type 2 Diabetes Mellitus
+- Secondary Diagnosis: Peripheral Neuropathy
+- Secondary Diagnosis: Hyponatremia
+
+**Procedure**: MRI Scan
+
+**Hospital Course**:
+Admission Date: 29/11/2024
+Course in Hospital: 74-year-old Male patient admitted with Type 2 Diabetes Mellitus. Underwent MRI Scan.
+
+**Discharge Plan**:
+- Medications: Omeprazole 20mg daily, Aspirin 75mg daily, Levothyroxine 100mcg daily
+- Follow-up Instructions: Neurology follow-up
+- Rehabilitation Plan: Pulmonary rehabilitation 
+- Other Instructions: None

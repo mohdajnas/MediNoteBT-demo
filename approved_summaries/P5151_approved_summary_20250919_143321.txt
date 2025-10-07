@@ -1,0 +1,23 @@
+**Patient Information**:
+- Name: Samantha Hernandez
+- Age: 33
+- Gender: Male
+- Patient ID: P5151
+
+**Diagnosis**:
+- Primary Diagnosis: Coronary Artery Disease (CAD) - Class II
+- Secondary Diagnosis: Vitamin D Deficiency
+- Secondary Diagnosis: Hyponatremia
+
+**Procedure**: Colonoscopy
+
+**Hospital Course**:
+Admission Date: 05/05/2025
+Course in Hospital: 33-year-old Male patient admitted with Coronary Artery Disease (CAD) - Class II. Underwent Colonoscopy.
+
+**Discharge Plan**:
+- Medications: Salbutamol Inhaler, Levothyroxine 100mcg daily, Prednisolone 10mg daily
+- Follow-up Instructions: Follow-up Echo and ECG
+- Rehabilitation Plan: Cardiac rehab
+- Other Instructions: None
+- HELLOO GUYSS

@@ -1,0 +1,22 @@
+**Patient Information**:
+- Name: Shajan K O
+- Age: 56
+- Gender: Male
+- Patient ID: N4894
+
+**Diagnosis**:
+- Primary Diagnosis: Coronary Artery Disease (CAD) - Class III
+- Secondary Diagnosis: Type 2 Diabetes Mellitus
+- Secondary Diagnosis: LAD (Left Anterior Descending) CTO (Total Occlusion)
+
+**Procedure**: None
+
+**Hospital Course**:
+Admission Date: 08/05/2024
+Course in Hospital: 56-year-old Mr. Shajan K O was admitted with a history of Coronary Artery Disease (CAD) - Class III, Electrocardiogram (ECG) and Echo (Echocardiogram) studies were reviewed, and TMT (Treadmill Test) was positive. He has undergone PCI (PerCutaneous Coronary Intervention) to LAD (Left Anterior Descending) on 29.10.2021 with EES (Everolimus-Eluting Stent). There is no change in his condition, and he is being discharged with regular follow-up and medication management. His clinical evaluation details indicate NYHA Class I.
+
+**Discharge Plan**:
+- Medications: Clopivas 75mg tablets 1 tablet daily, Xtor 80mg tablets 1 tablet daily
+- Follow-up Instructions: Follow-up review of blood results, Echo, and ECG.
+- Rehabilitation Plan: None
+- Other Instructions: None
