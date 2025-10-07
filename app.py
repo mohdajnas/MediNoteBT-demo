@@ -39,25 +39,64 @@ class DischargeSummaryGenerator:
         self.load_patient_data()
     
     def load_patient_data(self):
-        """Load patient data from CSV file"""
+        """Load patient data from CSV file with memory optimization"""
         try:
-            # Try reading with different encodings and separators
+            # Define data types for memory optimization
+            dtype_dict = {
+                'Patient ID': 'string',
+                'Name': 'string',
+                'Age': 'int16',
+                'Gender': 'category',
+                'Primary Diagnosis': 'string',
+                'Secondary Diagnosis 1': 'string',
+                'Secondary Diagnosis 2': 'string',
+                'Procedure': 'string',
+                'Admission Date': 'string',
+                'Course in Hospital': 'string',
+                'Medications': 'string',
+                'Follow-up Instructions': 'string',
+                'Rehabilitation Plan': 'string',
+                'Other Instructions': 'string'
+            }
+            
+            # Try reading with different encodings and optimized data types
             try:
-                self.patient_df = pd.read_csv(self.csv_file_path, encoding='utf-8')
+                self.patient_df = pd.read_csv(
+                    self.csv_file_path, 
+                    encoding='utf-8',
+                    dtype=dtype_dict,
+                    low_memory=False
+                )
             except:
                 try:
-                    self.patient_df = pd.read_csv(self.csv_file_path, encoding='latin-1')
+                    self.patient_df = pd.read_csv(
+                        self.csv_file_path, 
+                        encoding='latin-1',
+                        dtype=dtype_dict,
+                        low_memory=False
+                    )
                 except:
-                    self.patient_df = pd.read_csv(self.csv_file_path, encoding='iso-8859-1')
+                    self.patient_df = pd.read_csv(
+                        self.csv_file_path, 
+                        encoding='iso-8859-1',
+                        dtype=dtype_dict,
+                        low_memory=False
+                    )
             
             # Strip whitespace from column names
             self.patient_df.columns = self.patient_df.columns.str.strip()
             
             # Strip whitespace from Patient ID values
             if 'Patient ID' in self.patient_df.columns:
-                self.patient_df['Patient ID'] = self.patient_df['Patient ID'].astype(str).str.strip()
+                self.patient_df['Patient ID'] = self.patient_df['Patient ID'].str.strip()
             
+            # Optimize memory usage
+            self.patient_df = self._optimize_dataframe(self.patient_df)
+            
+            # Calculate memory usage
+            memory_usage = self.patient_df.memory_usage(deep=True).sum() / 1024**2
             print(f"Successfully loaded {len(self.patient_df)} patient records")
+            print(f"Memory usage: {memory_usage:.2f} MB")
             print(f"CSV columns: {list(self.patient_df.columns)}")
             if 'Patient ID' in self.patient_df.columns:
                 print(f"Sample Patient IDs (first 5): {self.patient_df['Patient ID'].head().tolist()}")
@@ -75,6 +114,19 @@ class DischargeSummaryGenerator:
             traceback.print_exc()
             self.patient_df = self.create_sample_data()
             print("Using sample data instead")
+    
+    def _optimize_dataframe(self, df):
+        """Optimize dataframe memory usage"""
+        # Convert object columns to category where appropriate
+        for col in df.select_dtypes(include=['object']).columns:
+            if col not in ['Patient ID', 'Name', 'Course in Hospital', 'Medications', 
+                          'Follow-up Instructions', 'Rehabilitation Plan', 'Other Instructions']:
+                num_unique = df[col].nunique()
+                num_total = len(df[col])
+                if num_unique / num_total < 0.5:  # If less than 50% unique values
+                    df[col] = df[col].astype('category')
+        
+        return df
     
     def create_sample_data(self):
         """Create sample patient data for demonstration"""
@@ -204,7 +256,7 @@ class DischargeSummaryGenerator:
     
     def generate_summary_with_gemini(self, patient_record):
         """
-        Generate discharge summary using Gemini API
+        Generate discharge summary using Gemini API with memory optimization
         
         Args:
             patient_record: Dictionary containing patient information
@@ -215,10 +267,10 @@ class DischargeSummaryGenerator:
         try:
             prompt = self.format_patient_data_for_llm(patient_record)
             
-            # Configure generation parameters
+            # Configure generation parameters with token limits for memory efficiency
             generation_config = genai.types.GenerationConfig(
                 temperature=0.3,  # Lower temperature for more consistent medical documentation
-                max_output_tokens=1024,
+                max_output_tokens=800,  # Reduced from 1024 for memory optimization
                 top_p=0.9,
                 top_k=40
             )
@@ -228,6 +280,9 @@ class DischargeSummaryGenerator:
                 prompt,
                 generation_config=generation_config
             )
+            
+            # Clear the prompt from memory immediately after use
+            del prompt
             
             return response.text
             
@@ -269,6 +324,10 @@ generator = DischargeSummaryGenerator(GEMINI_API_KEY, CSV_FILE_PATH)
 pending_summaries = {}  # Store pending summaries with tokens
 approved_summaries = {}  # Store approved/modified summaries
 
+# Memory optimization: Limit pending and approved summaries
+MAX_PENDING_SUMMARIES = 100
+MAX_APPROVED_SUMMARIES = 500
+
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 EMAIL_USER = os.getenv("EMAIL_USER")
@@ -283,6 +342,37 @@ doctors_list = [
     {"name": "Dr. Wilson", "email": "dr.wilson@hospital.com", "specialty": "General Medicine"},
     {"name": "Dr. Davis", "email": "dr.davis@hospital.com", "specialty": "Oncology"}
 ]
+
+def cleanup_old_summaries():
+    """Remove old summaries to prevent memory buildup"""
+    current_time = datetime.now()
+    
+    # Clean up pending summaries older than 24 hours
+    expired_tokens = []
+    for token, data in list(pending_summaries.items()):
+        created_at = datetime.fromisoformat(data['created_at'])
+        if (current_time - created_at).total_seconds() > 86400:  # 24 hours
+            expired_tokens.append(token)
+    
+    for token in expired_tokens:
+        del pending_summaries[token]
+    
+    # Limit pending summaries
+    if len(pending_summaries) > MAX_PENDING_SUMMARIES:
+        sorted_keys = sorted(pending_summaries.keys(), 
+                           key=lambda x: pending_summaries[x]['created_at'])
+        for key in sorted_keys[:len(pending_summaries) - MAX_PENDING_SUMMARIES]:
+            del pending_summaries[key]
+    
+    # Limit approved summaries
+    if len(approved_summaries) > MAX_APPROVED_SUMMARIES:
+        sorted_keys = sorted(approved_summaries.keys(), 
+                           key=lambda x: approved_summaries[x]['approved_at'])
+        for key in sorted_keys[:len(approved_summaries) - MAX_APPROVED_SUMMARIES]:
+            del approved_summaries[key]
+    
+    if expired_tokens:
+        print(f"Cleaned up {len(expired_tokens)} expired summaries")
 
 @app.route('/')
 def index():
@@ -474,6 +564,9 @@ def get_doctors():
 def send_for_approval():
     """Send summary to doctor for approval via email"""
     try:
+        # Clean up old summaries before adding new ones
+        cleanup_old_summaries()
+        
         data = request.get_json()
         patient_id = data.get('patient_id')
         summary = data.get('summary')
@@ -488,7 +581,7 @@ def send_for_approval():
         # Generate unique approval token
         approval_token = secrets.token_urlsafe(32)
         
-        # Store pending summary
+        # Store pending summary with minimal data
         pending_summaries[approval_token] = {
             'patient_id': patient_id,
             'summary': summary,
@@ -553,9 +646,9 @@ def approve_summary():
             edited_summary = modified_summary.strip()
             doctor_made_edits = edited_summary != original_summary
             
-            # Move to approved summaries
+            # Store only essential data in approved summaries
             approved_summaries[token] = {
-                **summary_data,
+                'patient_id': summary_data['patient_id'],
                 'final_summary': edited_summary if doctor_made_edits else original_summary,
                 'status': 'approved',
                 'approved_at': datetime.now().isoformat(),
@@ -566,8 +659,11 @@ def approve_summary():
             final_summary = edited_summary if doctor_made_edits else original_summary
             update_patient_record(summary_data['patient_id'], final_summary)
             
-            # Remove from pending
+            # Remove from pending to free memory
             del pending_summaries[token]
+            
+            # Clean up old summaries
+            cleanup_old_summaries()
             
             return jsonify({
                 'success': True,
