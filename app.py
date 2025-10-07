@@ -23,110 +23,33 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 class DischargeSummaryGenerator:
-    def __init__(self, gemini_api_key, csv_file_path):
+    def __init__(self, gemini_api_key, excel_file_path):
         """
         Initialize the discharge summary generator
         
         Args:
             gemini_api_key: Your Google Gemini API key
-            csv_file_path: Path to the CSV file containing patient data
+            excel_file_path: Path to the Excel file containing patient data
         """
         # Configure Gemini API
         genai.configure(api_key=gemini_api_key)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
-        self.csv_file_path = csv_file_path
+        self.excel_file_path = excel_file_path
         self.patient_df = None
         self.load_patient_data()
     
     def load_patient_data(self):
-        """Load patient data from CSV file with memory optimization"""
+        """Load patient data from Excel file"""
         try:
-            # Define data types for memory optimization
-            dtype_dict = {
-                'Patient ID': 'string',
-                'Name': 'string',
-                'Age': 'int16',
-                'Gender': 'category',
-                'Primary Diagnosis': 'string',
-                'Secondary Diagnosis 1': 'string',
-                'Secondary Diagnosis 2': 'string',
-                'Procedure': 'string',
-                'Admission Date': 'string',
-                'Course in Hospital': 'string',
-                'Medications': 'string',
-                'Follow-up Instructions': 'string',
-                'Rehabilitation Plan': 'string',
-                'Other Instructions': 'string'
-            }
-            
-            # Try reading with different encodings and optimized data types
-            try:
-                self.patient_df = pd.read_csv(
-                    self.csv_file_path, 
-                    encoding='utf-8',
-                    dtype=dtype_dict,
-                    low_memory=False
-                )
-            except:
-                try:
-                    self.patient_df = pd.read_csv(
-                        self.csv_file_path, 
-                        encoding='latin-1',
-                        dtype=dtype_dict,
-                        low_memory=False
-                    )
-                except:
-                    self.patient_df = pd.read_csv(
-                        self.csv_file_path, 
-                        encoding='iso-8859-1',
-                        dtype=dtype_dict,
-                        low_memory=False
-                    )
-            
-            # Strip whitespace from column names
-            self.patient_df.columns = self.patient_df.columns.str.strip()
-            
-            # Strip whitespace from Patient ID values
-            if 'Patient ID' in self.patient_df.columns:
-                self.patient_df['Patient ID'] = self.patient_df['Patient ID'].str.strip()
-            
-            # Optimize memory usage
-            self.patient_df = self._optimize_dataframe(self.patient_df)
-            
-            # Calculate memory usage
-            memory_usage = self.patient_df.memory_usage(deep=True).sum() / 1024**2
+            self.patient_df = pd.read_excel(self.excel_file_path)
             print(f"Successfully loaded {len(self.patient_df)} patient records")
-            print(f"Memory usage: {memory_usage:.2f} MB")
-            print(f"CSV columns: {list(self.patient_df.columns)}")
-            if 'Patient ID' in self.patient_df.columns:
-                print(f"Sample Patient IDs (first 5): {self.patient_df['Patient ID'].head().tolist()}")
-            else:
-                print(f"WARNING: 'Patient ID' column not found!")
-                print(f"Available columns: {list(self.patient_df.columns)}")
         except FileNotFoundError:
-            print(f"CSV file not found: {self.csv_file_path}")
+            print(f"Excel file not found: {self.excel_file_path}")
             # Create sample data if file doesn't exist
             self.patient_df = self.create_sample_data()
-            print("Using sample data instead")
         except Exception as e:
-            print(f"Error loading CSV file: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            print(f"Error loading Excel file: {str(e)}")
             self.patient_df = self.create_sample_data()
-            print("Using sample data instead")
-    
-    def _optimize_dataframe(self, df):
-        """Optimize dataframe memory usage"""
-        # Convert object columns to category where appropriate
-        for col in df.select_dtypes(include=['object']).columns:
-            if col not in ['Patient ID', 'Name', 'Course in Hospital', 'Medications', 
-                          'Follow-up Instructions', 'Rehabilitation Plan', 'Other Instructions']:
-                num_unique = df[col].nunique()
-                num_total = len(df[col])
-                if num_unique / num_total < 0.5:  # If less than 50% unique values
-                    df[col] = df[col].astype('category')
-        
-        return df
     
     def create_sample_data(self):
         """Create sample patient data for demonstration"""
@@ -177,22 +100,12 @@ class DischargeSummaryGenerator:
             dict: Patient record or None if not found
         """
         if self.patient_df is None or self.patient_df.empty:
-            print(f"No patient data loaded")
             return None
-        
-        # Strip whitespace from search term
-        patient_id = str(patient_id).strip()
-        
-        print(f"Searching for patient ID: '{patient_id}'")
-        print(f"Available IDs: {self.patient_df['Patient ID'].tolist()}")
         
         patient_record = self.patient_df[self.patient_df['Patient ID'] == patient_id]
-        
         if patient_record.empty:
-            print(f"Patient ID '{patient_id}' not found in database")
             return None
         
-        print(f"Found patient: {patient_record.iloc[0]['Name']}")
         return patient_record.iloc[0].to_dict()
     
     def format_patient_data_for_llm(self, patient_record):
@@ -256,7 +169,7 @@ class DischargeSummaryGenerator:
     
     def generate_summary_with_gemini(self, patient_record):
         """
-        Generate discharge summary using Gemini API with memory optimization
+        Generate discharge summary using Gemini API
         
         Args:
             patient_record: Dictionary containing patient information
@@ -267,10 +180,10 @@ class DischargeSummaryGenerator:
         try:
             prompt = self.format_patient_data_for_llm(patient_record)
             
-            # Configure generation parameters with token limits for memory efficiency
+            # Configure generation parameters
             generation_config = genai.types.GenerationConfig(
                 temperature=0.3,  # Lower temperature for more consistent medical documentation
-                max_output_tokens=800,  # Reduced from 1024 for memory optimization
+                max_output_tokens=1024,
                 top_p=0.9,
                 top_k=40
             )
@@ -280,9 +193,6 @@ class DischargeSummaryGenerator:
                 prompt,
                 generation_config=generation_config
             )
-            
-            # Clear the prompt from memory immediately after use
-            del prompt
             
             return response.text
             
@@ -299,7 +209,7 @@ class DischargeSummaryGenerator:
         Returns:
             str: Generated discharge summary or error message
         """
-        # Step 1: Fetch patient record from CSV
+        # Step 1: Fetch patient record from Excel
         patient_record = self.fetch_patient_record(patient_id)
         
         if patient_record is None:
@@ -312,7 +222,7 @@ class DischargeSummaryGenerator:
 
 # Initialize the generator
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-CSV_FILE_PATH = "patient_data.csv"
+EXCEL_FILE_PATH = "patient_data.xlsx"
 
 
 
@@ -320,13 +230,9 @@ if not GEMINI_API_KEY:
     print("Warning: GEMINI_API_KEY not found in environment variables")
     print("Please set your GEMINI_API_KEY environment variable")
 
-generator = DischargeSummaryGenerator(GEMINI_API_KEY, CSV_FILE_PATH)
+generator = DischargeSummaryGenerator(GEMINI_API_KEY, EXCEL_FILE_PATH)
 pending_summaries = {}  # Store pending summaries with tokens
 approved_summaries = {}  # Store approved/modified summaries
-
-# Memory optimization: Limit pending and approved summaries
-MAX_PENDING_SUMMARIES = 100
-MAX_APPROVED_SUMMARIES = 500
 
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -342,37 +248,6 @@ doctors_list = [
     {"name": "Dr. Wilson", "email": "dr.wilson@hospital.com", "specialty": "General Medicine"},
     {"name": "Dr. Davis", "email": "dr.davis@hospital.com", "specialty": "Oncology"}
 ]
-
-def cleanup_old_summaries():
-    """Remove old summaries to prevent memory buildup"""
-    current_time = datetime.now()
-    
-    # Clean up pending summaries older than 24 hours
-    expired_tokens = []
-    for token, data in list(pending_summaries.items()):
-        created_at = datetime.fromisoformat(data['created_at'])
-        if (current_time - created_at).total_seconds() > 86400:  # 24 hours
-            expired_tokens.append(token)
-    
-    for token in expired_tokens:
-        del pending_summaries[token]
-    
-    # Limit pending summaries
-    if len(pending_summaries) > MAX_PENDING_SUMMARIES:
-        sorted_keys = sorted(pending_summaries.keys(), 
-                           key=lambda x: pending_summaries[x]['created_at'])
-        for key in sorted_keys[:len(pending_summaries) - MAX_PENDING_SUMMARIES]:
-            del pending_summaries[key]
-    
-    # Limit approved summaries
-    if len(approved_summaries) > MAX_APPROVED_SUMMARIES:
-        sorted_keys = sorted(approved_summaries.keys(), 
-                           key=lambda x: approved_summaries[x]['approved_at'])
-        for key in sorted_keys[:len(approved_summaries) - MAX_APPROVED_SUMMARIES]:
-            del approved_summaries[key]
-    
-    if expired_tokens:
-        print(f"Cleaned up {len(expired_tokens)} expired summaries")
 
 @app.route('/')
 def index():
@@ -564,9 +439,6 @@ def get_doctors():
 def send_for_approval():
     """Send summary to doctor for approval via email"""
     try:
-        # Clean up old summaries before adding new ones
-        cleanup_old_summaries()
-        
         data = request.get_json()
         patient_id = data.get('patient_id')
         summary = data.get('summary')
@@ -581,7 +453,7 @@ def send_for_approval():
         # Generate unique approval token
         approval_token = secrets.token_urlsafe(32)
         
-        # Store pending summary with minimal data
+        # Store pending summary
         pending_summaries[approval_token] = {
             'patient_id': patient_id,
             'summary': summary,
@@ -646,9 +518,9 @@ def approve_summary():
             edited_summary = modified_summary.strip()
             doctor_made_edits = edited_summary != original_summary
             
-            # Store only essential data in approved summaries
+            # Move to approved summaries
             approved_summaries[token] = {
-                'patient_id': summary_data['patient_id'],
+                **summary_data,
                 'final_summary': edited_summary if doctor_made_edits else original_summary,
                 'status': 'approved',
                 'approved_at': datetime.now().isoformat(),
@@ -659,11 +531,8 @@ def approve_summary():
             final_summary = edited_summary if doctor_made_edits else original_summary
             update_patient_record(summary_data['patient_id'], final_summary)
             
-            # Remove from pending to free memory
+            # Remove from pending
             del pending_summaries[token]
-            
-            # Clean up old summaries
-            cleanup_old_summaries()
             
             return jsonify({
                 'success': True,
