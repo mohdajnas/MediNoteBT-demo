@@ -23,33 +23,58 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 class DischargeSummaryGenerator:
-    def __init__(self, gemini_api_key, excel_file_path):
+    def __init__(self, gemini_api_key, csv_file_path):
         """
         Initialize the discharge summary generator
         
         Args:
             gemini_api_key: Your Google Gemini API key
-            excel_file_path: Path to the Excel file containing patient data
+            csv_file_path: Path to the CSV file containing patient data
         """
         # Configure Gemini API
         genai.configure(api_key=gemini_api_key)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
-        self.excel_file_path = excel_file_path
+        self.csv_file_path = csv_file_path
         self.patient_df = None
         self.load_patient_data()
     
     def load_patient_data(self):
-        """Load patient data from Excel file"""
+        """Load patient data from CSV file"""
         try:
-            self.patient_df = pd.read_excel(self.excel_file_path)
+            # Try reading with different encodings and separators
+            try:
+                self.patient_df = pd.read_csv(self.csv_file_path, encoding='utf-8')
+            except:
+                try:
+                    self.patient_df = pd.read_csv(self.csv_file_path, encoding='latin-1')
+                except:
+                    self.patient_df = pd.read_csv(self.csv_file_path, encoding='iso-8859-1')
+            
+            # Strip whitespace from column names
+            self.patient_df.columns = self.patient_df.columns.str.strip()
+            
+            # Strip whitespace from Patient ID values
+            if 'Patient ID' in self.patient_df.columns:
+                self.patient_df['Patient ID'] = self.patient_df['Patient ID'].astype(str).str.strip()
+            
             print(f"Successfully loaded {len(self.patient_df)} patient records")
+            print(f"CSV columns: {list(self.patient_df.columns)}")
+            if 'Patient ID' in self.patient_df.columns:
+                print(f"Sample Patient IDs (first 5): {self.patient_df['Patient ID'].head().tolist()}")
+            else:
+                print(f"WARNING: 'Patient ID' column not found!")
+                print(f"Available columns: {list(self.patient_df.columns)}")
         except FileNotFoundError:
-            print(f"Excel file not found: {self.excel_file_path}")
+            print(f"CSV file not found: {self.csv_file_path}")
             # Create sample data if file doesn't exist
             self.patient_df = self.create_sample_data()
+            print("Using sample data instead")
         except Exception as e:
-            print(f"Error loading Excel file: {str(e)}")
+            print(f"Error loading CSV file: {str(e)}")
+            import traceback
+            traceback.print_exc()
             self.patient_df = self.create_sample_data()
+            print("Using sample data instead")
     
     def create_sample_data(self):
         """Create sample patient data for demonstration"""
@@ -100,12 +125,22 @@ class DischargeSummaryGenerator:
             dict: Patient record or None if not found
         """
         if self.patient_df is None or self.patient_df.empty:
+            print(f"No patient data loaded")
             return None
+        
+        # Strip whitespace from search term
+        patient_id = str(patient_id).strip()
+        
+        print(f"Searching for patient ID: '{patient_id}'")
+        print(f"Available IDs: {self.patient_df['Patient ID'].tolist()}")
         
         patient_record = self.patient_df[self.patient_df['Patient ID'] == patient_id]
+        
         if patient_record.empty:
+            print(f"Patient ID '{patient_id}' not found in database")
             return None
         
+        print(f"Found patient: {patient_record.iloc[0]['Name']}")
         return patient_record.iloc[0].to_dict()
     
     def format_patient_data_for_llm(self, patient_record):
@@ -209,7 +244,7 @@ class DischargeSummaryGenerator:
         Returns:
             str: Generated discharge summary or error message
         """
-        # Step 1: Fetch patient record from Excel
+        # Step 1: Fetch patient record from CSV
         patient_record = self.fetch_patient_record(patient_id)
         
         if patient_record is None:
@@ -222,7 +257,7 @@ class DischargeSummaryGenerator:
 
 # Initialize the generator
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-EXCEL_FILE_PATH = "patient_data.xlsx"
+CSV_FILE_PATH = "patient_data.csv"
 
 
 
@@ -230,7 +265,7 @@ if not GEMINI_API_KEY:
     print("Warning: GEMINI_API_KEY not found in environment variables")
     print("Please set your GEMINI_API_KEY environment variable")
 
-generator = DischargeSummaryGenerator(GEMINI_API_KEY, EXCEL_FILE_PATH)
+generator = DischargeSummaryGenerator(GEMINI_API_KEY, CSV_FILE_PATH)
 pending_summaries = {}  # Store pending summaries with tokens
 approved_summaries = {}  # Store approved/modified summaries
 
